@@ -1,0 +1,11 @@
+Flask
+pywebview
+pyserial
+pygrabber
+pywin32
+opencv-python
+qrcode
+WeasyPrint
+requests
+Pillow
+PyMuPDF

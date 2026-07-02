@@ -1,0 +1,12 @@
+{
+    "mode": "online",
+    "server_ip": "http://127.0.0.1:5000/",
+    "printer": "Microsoft Print to PDF",
+    "camera": null,
+    "scale_port": "COM4",
+    "scale_simulation": true,
+    "event_name": "嘉義市115年「市長盃」全國跆拳道錦標賽-對打第一天",
+    "save_photo": false,
+    "print_copies": 0,
+    "update_source": "Y:\\競賽軟體\\過磅系統"
+}

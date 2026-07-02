@@ -1,0 +1,785 @@
+/* 全局設定 */
+:root {
+    --bg-color: #011126;
+    --panel-bg-color: #022140;
+    --header-bg-color: #032E59;
+    --text-color: #F2F2F2;
+    --accent-color: #05C7F2;
+    --pass-color: #00FF00;
+    --fail-color: #FF0000;
+    --pending-color: #FFFF00;
+}
+
+body {
+    
+    margin: 0; /* 移除預設邊距 */
+    margin: 0;
+    font-family: 'Microsoft JhengHei', '微軟正黑體', sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    overflow: hidden;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* 畫面一: 系統設置 */
+#settings-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.settings-container {
+    background-color: var(--panel-bg-color);
+    padding: 40px;
+    border-radius: 8px;
+    border: 1px solid var(--header-bg-color);
+    width: 500px;
+}
+
+.settings-container h1 {
+    text-align: center;
+    margin-top: 0;
+    color: var(--accent-color);
+}
+
+.setting-item {
+    margin-bottom: 20px;
+}
+
+.setting-item > label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.mode-selector {
+    display: flex;
+    border: 1px solid var(--header-bg-color);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.mode-selector input[type="radio"] {
+    display: none;
+}
+
+.mode-selector label {
+    flex: 1;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    background-color: var(--bg-color);
+    transition: background-color 0.2s;
+}
+
+.mode-selector input[type="radio"]:checked + label {
+    background-color: var(--accent-color);
+    color: var(--bg-color);
+    font-weight: bold;
+}
+
+.setting-item input[type="text"],
+.setting-item select,
+.file-input-wrapper {
+    width: 100%;
+    padding: 0;
+    border-radius: 4px;
+    border: 1px solid var(--header-bg-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 16px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+}
+/* 針對 select 和 text input 補回 padding */
+.setting-item input[type="text"],
+.setting-item select {
+    padding: 10px;
+}
+
+
+.setting-item input[type="file"] {
+    display: none;
+}
+
+.file-input-label {
+    padding: 10px 15px;
+    background-color: var(--header-bg-color);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background-color 0.2s;
+}
+
+.file-input-label:hover {
+    background-color: var(--accent-color);
+    color: var(--bg-color);
+}
+
+#file-name-display {
+    padding-left: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #aaa;
+}
+
+.setting-item-group {
+    display: flex;
+    gap: 20px;
+    align-items: flex-end;
+}
+.setting-item-group .setting-item {
+    flex: 1;
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.button-group button {
+    flex: 1; /* 讓群組內所有按鈕平分寬度 */
+    padding: 15px;
+    border: none;
+    border-radius: 4px;
+    font-size: 18px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+/* 「儲存並開始」按鈕的獨立樣式 */
+#start-button {
+    background-color: var(--accent-color);
+    color: var(--bg-color);
+}
+#start-button:hover {
+    background-color: #04a8c9; /* 滑鼠移過時的顏色 */
+}
+
+/* 「匯出過磅結果」按鈕的獨立樣式 */
+#export-offline-results-btn {
+    background-color: #38a169; /* 綠色 */
+    color: var(--text-color);
+}
+#export-offline-results-btn:hover {
+    background-color: #2f855a; /* 滑鼠移過時的顏色 */
+}
+
+/* 畫面二: 過磅介面 */
+#weigh-in-screen {
+    display: grid;
+    grid-template-columns: 2fr 3fr 5fr;
+    grid-template-rows: 3fr 1fr;
+    height: 100vh;
+    gap: 10px;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.panel {
+    background-color: var(--panel-bg-color);
+    border: 1px solid var(--header-bg-color);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.panel-header {
+    background-color: var(--header-bg-color);
+    padding: 8px;
+    font-weight: bold;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+#category-list { grid-column: 1; grid-row: 1; }
+#player-list { grid-column: 2; grid-row: 1; }
+#log-area { grid-column: 1 / 3; grid-row: 2; }
+
+#right-column {
+    grid-column: 3;
+    grid-row: 1 / 3;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#right-column .panel { flex-shrink: 0; }
+#main-weigh-in-area { flex-grow: 1; }
+#camera-feed { flex-shrink: 0; }
+
+.list-group {
+    list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1;
+    direction: rtl; /* <-- 新增這一行 */
+}
+.list-group li {
+    padding: 12px 15px; border-bottom: 1px solid var(--header-bg-color); cursor: pointer; display: flex; justify-content: space-between;
+    direction: ltr; /* <-- 新增這一行 */
+}
+.list-group li:hover, .list-group li.active {
+    background-color: var(--accent-color); color: var(--bg-color);
+}
+.player-status { font-weight: bold; }
+.status-passed { color: var(--pass-color); }
+.status-failed { color: var(--fail-color); }
+.status-pending { color: var(--pending-color); }
+
+.weigh-in-grid {
+    display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: auto 1fr auto; gap: 10px; padding: 20px; height: 100%; box-sizing: border-box;
+}
+.info-box {
+    grid-column: 1 / -1; background: var(--bg-color); padding: 10px; text-align: center; font-size: 1.2em;
+}
+.weigh-in-grid .info-box {
+    display: flex;         /* 啟用 Flexbox */
+    justify-content: space-between; /* 將子項目分開 */
+    align-items: center;   /* 垂直置中 */
+    gap: 15px;             /* 項目間的間距 */
+}
+
+/* 設定體重範圍區塊佔據 3/4 (75%) 的寬度 */
+.weight-range-container {
+    flex: 3;               /* 佔用 3 個單位 */
+    text-align: left;      /* 【修改】讓文字靠左對齊 */
+    padding-left: 20px;    /* 【修改】增加一些左內距 */
+}
+
+/* 設定新按鈕佔據 1/4 (25%) 的寬度 */
+.info-box .action-button {
+    flex: 1; /* 佔用 1 個單位 */
+}
+
+/* 微調按鈕樣式，讓它在該位置看起來更合適 */
+#add-100g-btn {
+    padding: 10px;      /* 稍微減少內距 */
+    font-size: 1.1em;   /* 稍微縮小字體 */
+    margin: 0;          /* 移除可能繼承的 margin */
+}
+.history-display-box {
+    grid-column: 1 / -1; /* 佔滿整欄寬度 */
+    background: var(--bg-color);
+    padding: 10px;
+    font-size: 0.9em;
+    color: #ccc;
+    height: 60px; /* 給一個固定高度 */
+    overflow-y: auto; /* 如果內容太多，顯示滾動條 */
+    border-radius: 4px;
+}
+.history-display-box p {
+    margin: 0 0 5px 0; /* 調整行距 */
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* 調整 weigh-in-grid 的佈局以容納新區塊 */
+.weigh-in-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    /* 新增一行來放歷史記錄 */
+    grid-template-rows: auto auto 1fr auto;
+    gap: 10px;
+    padding: 20px;
+    height: 100%;
+    box-sizing: border-box;
+}
+
+.player-info-box {
+    grid-column: 1 / -1;
+    grid-row: 4; /* 將選手資訊移到第 4 行 */
+}
+.weight-display-box {
+    font-size: 4em; font-weight: bold; color: var(--accent-color); display: flex; justify-content: center; align-items: center;
+}
+.status-display-box {
+    font-size: 4em; font-weight: bold; display: flex; justify-content: center; align-items: center;
+}
+.status-display-box.passed { color: var(--pass-color); }
+.status-display-box.failed { color: var(--fail-color); }
+.action-button {
+    padding: 15px; font-size: 1.5em; border: none; border-radius: 4px; background-color: var(--header-bg-color); color: var(--text-color); cursor: pointer;
+}
+.action-button:hover { background-color: var(--accent-color); color: var(--bg-color); }
+
+.status-bar {
+    padding: 5px 10px; display: flex; justify-content: space-between; background: var(--bg-color);
+    display: none; /* <-- 新增這一行 */
+}
+#log-list {
+    list-style: none; padding: 10px; margin: 0; overflow-y: auto; flex-grow: 1;
+    /* [核心修改] 允許文字可以被選取 */
+    user-select: text;
+    direction: rtl; /* <-- 新增這一行 */
+}
+#log-list li { 
+    font-family: 'Courier New', Courier, monospace; 
+    direction: ltr; /* <-- 新增這一行 */
+}
+
+#camera-feed {
+    padding: 0; background-color: transparent; border: none; display: flex;
+}
+.dual-view-container {
+    display: flex; gap: 10px; width: 100%; height: 100%;
+}
+.view-box {
+    flex: 1; background-color: var(--panel-bg-color); border: 1px solid var(--header-bg-color);
+    display: flex; flex-direction: column;
+}
+.view-placeholder {
+    flex-grow: 1; background-color: #000; display: flex; justify-content: center;
+    align-items: center; color: #666; position: relative; overflow: hidden;
+    margin: 10px; aspect-ratio: 16 / 9;
+}
+.view-placeholder img {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain;
+}
+#saved-photo-placeholder-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* [核心修改] 放大字體讓它更清晰 */
+    font-size: 1.5em; 
+    color: #888; /* 調整為更明顯的灰色 */
+}
+
+.input-group {
+    display: flex;
+    align-items: center;
+}
+.input-group input {
+    flex-grow: 1;
+}
+.icon-btn {
+    margin-left: 8px;
+    padding: 5px 8px;
+    font-size: 1.2em;
+    cursor: pointer;
+    border: 1px solid var(--header-bg-color);
+    background-color: #f0f0f0;
+    color: #333;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+.icon-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px); /* 初始位置在畫面外 */
+    padding: 15px 25px;
+    border-radius: 8px;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    z-index: 1000;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: transform 0.4s ease-in-out, opacity 0.4s ease-in-out;
+}
+
+.notification.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.notification.error {
+    background-color: var(--fail-color); /* 使用已定義的失敗顏色 */
+}
+
+.notification.success {
+    background-color: var(--pass-color); /* 使用已定義的通過顏色 */
+    color: var(--bg-color); /* 成功時使用深色文字更清晰 */
+}
+
+.filter-container {
+    padding: 8px;
+    background-color: var(--bg-color); /* 背景色與主背景相同 */
+    border-bottom: 1px solid var(--header-bg-color); /* 加上底線區隔 */
+    flex-shrink: 0; /* 防止容器被壓縮 */
+}
+
+#category-filter {
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box; /* 確保 padding 不會撐大寬度 */
+    border-radius: 4px;
+    border: 1px solid var(--header-bg-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 16px;
+}
+
+#category-filter::placeholder {
+    color: #888; /* 提示文字顏色 */
+}
+
+#category-filter:focus {
+    outline: none;
+    border-color: var(--accent-color); /* 聚焦時顯示高亮顏色 */
+}
+
+/* 1. 建立按鈕群組的容器 */
+.action-button-group {
+    grid-column: 1 / -1; /* 讓整個群組佔據 grid 的完整寬度 */
+    display: flex;       /* 使用 Flexbox 進行水平佈局 */
+    gap: 10px;           /* 在項目之間增加間距 */
+    align-items: stretch; /* 讓所有項目等高 */
+}
+
+/* 2. 讓群組內的按鈕平分寬度 */
+.action-button-group > .action-button {
+    flex: 1; /* flex: 1 讓它們平分寬度 */
+}
+
+/* 3. 為「隨機過磅」按鈕新增一個啟用時的狀態 */
+.action-button.active {
+    background-color: var(--accent-color); /* 啟用時顯示高亮顏色 */
+    color: var(--bg-color);
+    font-weight: bold;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.3); /* 加上內陰影，更有按下去的感覺 */
+}
+
+.custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* 半透明背景 */
+    display: none; /* 預設隱藏 */
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.custom-modal-overlay.active {
+    display: flex; /* 透過 JS 加入 .active 來顯示 */
+}
+
+.custom-modal {
+    background-color: var(--panel-bg-color);
+    border: 1px solid var(--accent-color);
+    border-radius: 8px;
+    padding: 30px 40px;
+    width: 90%;
+    max-width: 450px;
+    box-shadow: 0 5px 25px rgba(0,0,0,0.5);
+    text-align: center;
+    transform: scale(0.95);
+    opacity: 0;
+    transition: transform 0.2s ease-out, opacity 0.2s ease-out;
+}
+
+.custom-modal-overlay.active .custom-modal {
+    transform: scale(1);
+    opacity: 1;
+}
+
+.custom-modal p {
+    font-size: 1.4em; /* 放大字體讓訊息更清晰 */
+    margin-top: 0;
+    margin-bottom: 30px;
+    color: var(--text-color);
+}
+
+.custom-modal-buttons {
+    display: flex;
+    justify-content: space-around;
+    gap: 20px;
+}
+
+.custom-modal-buttons .action-button {
+    flex: 1;
+    font-size: 1.2em;
+    padding: 12px 20px;
+}
+
+/* 取消按鈕的特殊樣式 */
+.custom-modal-buttons .action-button.secondary {
+    background-color: #6c757d; /* 灰色系 */
+    color: white;
+}
+
+.custom-modal-buttons .action-button.secondary:hover {
+    background-color: #5a6268;
+}
+
+/* 確定按鈕的樣式 (繼承 .action-button 的 hover) */
+#custom-confirm-yes {
+    background-color: var(--accent-color);
+    color: var(--bg-color);
+}
+#custom-confirm-yes:hover {
+    background-color: #04a8c9;
+}
+
+/* 將 status-pending 的顏色從黃色改為較柔和的灰色 */
+.status-pending { color: #9ca3af; }
+
+/* 為新的「已抽磅」狀態定義一個顏色 (使用系統的強調色) */
+.status-random_completed {
+    color: var(--accent-color);
+}
+
+@keyframes pulse-warning {
+    0%, 100% {
+        background-color: var(--accent-color);
+        box-shadow: 0 0 10px rgba(5, 199, 242, 0.5);
+    }
+    50% {
+        background-color: #04a8c9; /* 較暗的顏色 */
+        box-shadow: 0 0 20px rgba(5, 199, 242, 1);
+    }
+}
+
+/* 2. 將動畫應用到「隨機過磅」按鈕的 .active 狀態上 */
+.action-button-group > #random-weigh-in-btn.active {
+    background-color: var(--accent-color); /* 保持原有的 active 顏色 */
+    color: var(--bg-color);
+    font-weight: bold;
+    
+    /* ▼▼▼ 新增的動畫屬性 ▼▼▼ */
+    animation-name: pulse-warning;
+    animation-duration: 1.2s;       /* 動畫週期 1.2 秒 */
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite; /* 無限循環 */
+}
+
+/* 1. 讓「選手資訊」的表頭可以左右分割 */
+#player-list .panel-header {
+    display: flex;
+    justify-content: space-between; /* 關鍵：讓左右元素分開 */
+    align-items: center;
+}
+
+/* 2. 伺服器狀態指示器的樣式 */
+#server-status-indicator {
+    font-size: 0.9em;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+/* 3. 連線成功 (綠色) */
+#server-status-indicator.status-ok {
+    color: #C6F6D5; /* 淺綠文字 */
+    background-color: #2F855A; /* 深綠背景 */
+}
+
+/* 4. 連線失敗 (紅色) */
+#server-status-indicator.status-error {
+    color: #FED7D7; /* 淺紅文字 */
+    background-color: #9B2C2C; /* 深紅背景 */
+}
+
+/* 5. 檢查中 / 狀態未知 (黃色/棕色) */
+#server-status-indicator.status-checking {
+    color: #FEEBC8; /* 淺黃文字 */
+    background-color: #975A16; /* 棕黃背景 */
+}
+
+/* 新增的「次要按鈕」樣式 (用於強制同步) */
+.secondary-button {
+    background-color: #033a73; /* 不同的藍色 */
+    color: var(--text-color);
+}
+
+.secondary-button:hover {
+    background-color: #022e5e;
+}
+
+/* 讓按鈕在忙碌時顯示「禁用」狀態 */
+.secondary-button:disabled {
+    background-color: #555;
+    color: #999;
+    cursor: not-allowed;
+}
+
+/* 新增的「危險按鈕」樣式 (用於清空資料) */
+.danger-button {
+    background-color: #9B2C2C; /* 深紅色 */
+    color: var(--text-color);
+}
+
+.danger-button:hover {
+    background-color: #C53030; /* 亮一點的紅色 */
+}
+
+/* 刪除賽事 Modal 的特定樣式 */
+.custom-modal.delete-event-modal {
+    max-width: 550px;
+    text-align: left;
+}
+.custom-modal.delete-event-modal h3 {
+    text-align: center;
+    color: var(--accent-color);
+    margin-top: 0;
+}
+.event-list-container {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--header-bg-color);
+    background-color: var(--bg-color);
+    padding: 15px;
+    margin-bottom: 25px;
+    border-radius: 4px;
+}
+.event-list-container ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.event-list-container li {
+    padding: 10px 5px;
+    border-bottom: 1px solid var(--header-bg-color);
+    font-size: 1.1em;
+}
+.event-list-container li:last-child {
+    border-bottom: none;
+}
+.event-list-container input[type="checkbox"] {
+    margin-right: 15px;
+    transform: scale(1.3); /* 讓勾選框大一點 */
+}
+.custom-modal-buttons.event-delete-buttons {
+    justify-content: space-between;
+}
+/* 沿用 .danger-button 樣式 */
+.danger-button {
+    background-color: #9B2C2C; /* 深紅色 */
+    color: var(--text-color);
+}
+.danger-button:hover {
+    background-color: #C53030; /* 亮一點的紅色 */
+}
+
+/* --- 密碼輸入 Modal 的樣式 --- */
+
+.custom-modal.password-modal {
+    max-width: 400px;
+    text-align: center;
+}
+
+/* 密碼輸入框的樣式 (參考 #category-filter) */
+.password-modal-input {
+    width: 100%;
+    padding: 12px;
+    box-sizing: border-box; 
+    border-radius: 4px;
+    border: 1px solid var(--header-bg-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 1.2em;
+    margin-top: 15px;
+    text-align: center;
+}
+
+.password-modal-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+/* 密碼錯誤訊息的樣式 */
+.password-error {
+    color: var(--fail-color); /* 紅色 */
+    font-weight: bold;
+    height: 20px; /* 佔一個空間，避免版面跳動 */
+    margin-top: 15px;
+    margin-bottom: 0;
+    font-size: 1.1em;
+}
+
+#resync-notification-area {
+    font-size: 0.9em;
+    color: var(--pass-color); /* 使用「通過」的綠色 */
+    font-weight: bold;
+    text-align: center;
+    
+    /* 讓這個元素自動填滿「選手資訊」和「伺服器狀態」之間的
+      所有可用空間，使其保持在中間。
+    */
+    flex-grow: 1; 
+
+    /* 預設為透明 (隱藏) */
+    opacity: 0;
+    
+    /* 加上淡入淡出效果 */
+    transition: opacity 0.5s ease-in-out;
+}
+
+/* 當 JS 加入 .show class 時，淡入顯示 */
+#resync-notification-area.show {
+    opacity: 1;
+}
+
+/* --- ▼▼▼ 全域搜尋框與搜尋結果兩行式樣式 ▼▼▼ --- */
+
+/* 讓右邊的搜尋框套用與左邊相同的樣式 */
+#global-player-search {
+    width: 100%;
+    padding: 10px;
+    box-sizing: border-box;
+    border-radius: 4px;
+    border: 1px solid var(--header-bg-color);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 16px;
+}
+
+#global-player-search::placeholder {
+    color: #888;
+}
+
+#global-player-search:focus {
+    outline: none;
+    border-color: var(--accent-color);
+}
+
+/* 搜尋結果：改為垂直排列 */
+.search-result-item {
+    display: flex;
+    flex-direction: column !important; /* 強制改為垂直排列 */
+    align-items: flex-start !important; /* 靠左對齊 */
+    gap: 6px; /* 兩行之間的間距 */
+}
+
+/* 搜尋結果：改為垂直排列，並確保寬度填滿 */
+.search-result-item {
+    display: flex;
+    flex-direction: column !important;
+    align-items: stretch !important; /* 讓內部元素可以撐滿寬度，為了解決狀態靠右對齊 */
+    gap: 6px;
+}
+
+/* 搜尋結果第一行：組別名稱 */
+.search-result-cat {
+    font-size: 0.85em;
+    color: var(--accent-color);
+    background-color: rgba(5, 199, 242, 0.1); 
+    padding: 3px 8px;
+    border-radius: 4px;
+    align-self: flex-start; /* 讓組別標籤靠左，不要被拉長 */
+}
+
+#player-list li.active .search-result-cat,
+#player-list li:hover .search-result-cat {
+    color: #000000 !important; /* 依照你的需求，改為黑色文字 */
+    background-color: rgba(255, 255, 255, 0.5) !important; /* 改用半透明白底，襯托黑色文字會更乾淨漂亮 */
+    font-weight: bold; /* 稍微加粗讓黑色字體更銳利 */
+}
+
+#player-list li.active .status-pending,
+#player-list li:hover .status-pending {
+    color: #000000 !important;
+    font-weight: bold;
+}

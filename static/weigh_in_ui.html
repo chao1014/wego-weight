@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>跆拳道過磅系統</title>
+    <link rel="stylesheet" href="/static/weigh_in_style.css">
+</head>
+<body>
+
+    <div id="settings-screen" class="screen">
+        <div class="settings-container">
+            <h1>系統設置</h1>
+
+            <div class="setting-item">
+                <label>運作模式</label>
+                <div class="mode-selector">
+                    <input type="radio" id="mode-online" name="mode" value="online" checked>
+                    <label for="mode-online">連線模式</label>
+                    <input type="radio" id="mode-offline" name="mode" value="offline">
+                    <label for="mode-offline">離線模式</label>
+                </div>
+            </div>
+
+            <div id="online-settings" class="setting-item">
+                <label for="server-ip">主系統 IP 位址</label>
+                <div class="input-group">
+                    <input type="text" id="server-ip" placeholder="例如: http://192.168.0.100:5000">
+                    <button id="refresh-events-btn" class="icon-btn" title="重新整理賽事列表">⟳</button>
+                </div>
+                
+                <label for="event-select" style="margin-top: 10px;">賽事名稱 (Event Name)</label>
+                <select id="event-select">
+                    <option value="">請先輸入主系統IP</option>
+                </select>
+            </div>
+            
+
+            <div id="offline-settings" class="setting-item hidden">
+                <label>匯入資料檔</label>
+                <div class="file-input-wrapper">
+                    <input type="file" id="data-file" accept=".json, .csv">
+                    <label class="file-input-label">選擇檔案</label>
+                    <span id="file-name-display">尚未選擇檔案</span>
+                </div>
+            </div>
+
+            <div class="setting-item-group">
+                <div class="setting-item">
+                    <label for="scale-port-input">磅秤序列埠 (COM Port)</label>
+                    <input type="text" id="scale-port-input" placeholder="例如: COM3">
+                </div>
+                <div class="setting-item">
+                    <label>模擬模式</label>
+                        <div class="mode-selector">
+                        <input type="radio" id="sim-off" name="sim-mode" value="false">
+                        <label for="sim-off">關閉</label>
+                        <input type="radio" id="sim-on" name="sim-mode" value="true">
+                        <label for="sim-on">開啟</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="setting-item-group">
+                <div class="setting-item">
+                    <label for="print-copies-input">列印標籤數量</label>
+                    <select id="print-copies-input" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid var(--header-bg-color); background-color: var(--bg-color); color: var(--text-color); font-size: 16px; box-sizing: border-box;">
+                        <option value="0">0 (不列印)</option>
+                        <option value="1">1</option>
+                        <option value="2" selected>2</option>
+                        <option value="3">3</option>
+                        <option value="4">4</option>
+                        <option value="5">5</option>
+                    </select>
+                </div>
+                <div class="setting-item" id="printer-select-container">
+                    <label for="printer-select">選擇印表機</label>
+                    <select id="printer-select"><option>載入中...</option></select>
+                </div>
+            </div>
+
+            <div class="setting-item-group">
+                <div class="setting-item">
+                    <label>儲存過磅照片</label>
+                    <div class="mode-selector">
+                        <input type="radio" id="photo-on" name="save-photo-mode" value="true" checked>
+                        <label for="photo-on">開啟</label>
+                        <input type="radio" id="photo-off" name="save-photo-mode" value="false">
+                        <label for="photo-off">關閉</label>
+                    </div>
+                </div>
+                <div class="setting-item" id="camera-select-container">
+                    <label for="camera-select">選擇攝影機</label>
+                    <select id="camera-select"><option>載入中...</option></select>
+                </div>
+            </div>
+
+            <div class="button-group">                                
+                <button id="clear-cache-button" class="danger-button">清除資料</button>
+                <button id="export-offline-results-btn">匯出結果</button>
+                <button id="force-sync-button" class="secondary-button hidden">同步資料</button>
+                <button id="start-button">開始過磅</button>
+            </div>
+    </div></div>
+
+    <div id="weigh-in-screen" class="screen hidden">
+        <div id="category-list" class="panel">
+            <div class="panel-header">組別清單</div>
+            <div class="filter-container">
+                <input type="text" id="category-filter" placeholder="搜尋組別名稱...">
+            </div>
+            <ul class="list-group"></ul>
+        </div>
+        <div id="player-list" class="panel">
+            <div class="panel-header">
+                <span id="player-list-title">選手資訊</span>                
+                <span id="resync-notification-area"></span>
+                <span id="server-status-indicator" class="status-checking">● 檢查中...</span>
+            </div>
+            <div class="filter-container">
+                <input type="text" id="global-player-search" placeholder="搜尋姓名、單位、背號...">
+            </div>
+            <ul class="list-group"></ul>
+        </div>
+        <div id="log-area" class="panel">
+             <div class="status-bar">
+                <span id="photo-status"></span>
+                <span id="save-status"></span>
+             </div>
+             <ul id="log-list"></ul>
+        </div>
+
+        <div id="right-column">
+            <div id="main-weigh-in-area" class="panel">
+                <div class="weigh-in-grid">
+                    <div class="info-box">
+                        <div class="weight-range-container">
+                            <span>體重範圍：</span>
+                            <span id="weight-range">--</span>
+                        </div>
+                        <button id="add-100g-btn" class="action-button">上限+100g</button>
+                    </div>
+                    <div id="history-display" class="history-display-box">
+                        </div>
+                    <div id="weight-display" class="weight-display-box">-- kg</div>
+                    <div id="status-display" class="status-display-box">--</div>
+                    <div id="current-player-info" class="info-box player-info-box">--</div>
+                    
+                    <div class="action-button-group">
+                        <button id="save-button" class="action-button">儲存</button>
+                        <button id="reprint-button" class="action-button">重印</button>
+                        <button id="random-weigh-in-btn" class="action-button">隨機過磅</button>
+                    </div>
+                    </div>
+            </div>
+            <div id="camera-feed" class="panel">
+                <div class="dual-view-container">
+                    <div id="live-view" class="view-box">
+                        <div class="panel-header">即時影像</div>
+                        <div class="view-placeholder">
+                            <img id="camera-image" src="" alt="Live Camera Feed">
+                        </div>
+                    </div>
+                    <div id="saved-view" class="view-box">
+                        <div class="panel-header">存檔影像</div>
+                        <div class="view-placeholder">
+                            <img id="saved-photo-image" src="" alt="Saved Photo">
+                            <span id="saved-photo-placeholder-text">未拍照</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="custom-confirm-overlay" class="custom-modal-overlay">
+        <div class="custom-modal">
+            <p id="custom-confirm-message"></p>
+            <div class="custom-modal-buttons">
+                <button id="custom-confirm-yes" class="action-button">確定</button>
+                <button id="custom-confirm-no" class="action-button secondary">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="delete-event-modal-overlay" class="custom-modal-overlay">
+        <div class="custom-modal delete-event-modal">
+            <h3>清除本地賽事資料</h3>
+            <p>請選擇您要永久刪除的資料。此操作不可撤銷。</p>
+            
+            <div id="delete-event-list" class="event-list-container">
+                </div>
+            
+            <div class="custom-modal-buttons event-delete-buttons">
+                <button id="delete-selected-btn" class="action-button secondary">刪除所選</button>
+                <button id="delete-all-btn" class="action-button danger-button">全部刪除</button>
+                <button id="delete-cancel-btn" class="action-button">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="password-modal-overlay" class="custom-modal-overlay">
+        <div class="custom-modal password-modal">
+            <h3>請輸入管理員密碼</h3>
+            <p>此為受保護的操作，請輸入密碼：</p>
+            
+            <input type="password" id="password-input" class="password-modal-input" placeholder="請在此輸入密碼...">
+            
+            <p id="password-error-message" class="password-error"></p>
+            
+            <div class="custom-modal-buttons">
+                <button id="password-submit-btn" class="action-button">確定</button>
+                <button id="password-cancel-btn" class="action-button secondary">取消</button>
+            </div>
+        </div>
+    </div>
+    <script src="/static/weigh_in_logic.js"></script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Git Ignore for Weight Project
+build/
+dist/
+*.lic
+__pycache__/
+*.py[cod]
+weigh_in.db
+*.log
+qrcode_temp.png
+photos/*
+!photos/.gitkeep
+
+# Exclude installers and driver packages
+*.exe

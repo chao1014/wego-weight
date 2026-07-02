@@ -1,0 +1,17 @@
+{
+    "event_name": "114年全國青年盃跆拳道錦標賽",
+    "categories": [
+        { "id": 1, "name": "國中男子組45公斤級", "min_weight": 42.1, "max_weight": 45.19 },
+        { "id": 2, "name": "國中男子組48公斤級", "min_weight": 45.2, "max_weight": 48.19 },
+        { "id": 3, "name": "國中男子組51公斤級", "min_weight": 48.2, "max_weight": 51.19 },
+        { "id": 4, "name": "國中男子組55公斤級", "min_weight": 51.2, "max_weight": 55.19 }
+    ],
+    "players": [
+        { "id": 1001, "bib": "1001", "name": "林德超", "team": "國立員林農工", "category_id": 1 },
+        { "id": 1002, "bib": "1002", "name": "林立豪", "team": "國立綜高工", "category_id": 2 },
+        { "id": 1003, "bib": "1003", "name": "林柏亭", "team": "國立和美實校", "category_id": 2 },
+        { "id": 1004, "bib": "1004", "name": "王曉明", "team": "臺中一中", "category_id": 1 },
+        { "id": 1005, "bib": "1005", "name": "陳大文", "team": "彰化高中", "category_id": 3 },
+        { "id": 1006, "bib": "1006", "name": "李強", "team": "臺中二中", "category_id": 4 }
+    ]
+}
