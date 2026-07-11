@@ -46,69 +46,98 @@ class ScaleReader:
         self.is_simulating = False
         self.thread = None
         self.ser = None
+        self.lock = threading.Lock()
+        self.reconnect_delay = 1
+
+    def connect(self):
+        """安全建立串口連線"""
+        with self.lock:
+            self.disconnect()
+            try:
+                self.ser = serial.Serial(self.port, self.baudrate, timeout=1)
+                self.reconnect_delay = 1  # 成功連線後重置延遲
+                logging.info(f"磅秤串口連線成功: {self.port}")
+                return True
+            except Exception as e:
+                self.ser = None
+                logging.warning(f"無法開啟序列埠 {self.port}: {e}，將在 {self.reconnect_delay} 秒後重試")
+                return False
+
+    def disconnect(self):
+        """安全關閉並釋放串口資源"""
+        with self.lock:
+            if self.ser:
+                try:
+                    self.ser.close()
+                except Exception:
+                    pass
+                self.ser = None
+
     def _read_loop_real(self):
         while self.is_running:
+            if not self.is_running:
+                break
+                
+            # 處理連線與自動重連
+            if not self.ser:
+                if not self.connect():
+                    time.sleep(self.reconnect_delay)
+                    self.reconnect_delay = min(self.reconnect_delay * 2, 15)  # 指數退避上限 15 秒
+                    continue
+
             try:
-                if self.ser and self.ser.in_waiting > 0:
-                    # 1. 讀取原始資料
-                    line = self.ser.readline().decode('ascii').strip()
-                    
-                    # 2. 用逗號分割字串
-                    parts = line.split(',')
-                    
-                    # 3. 檢查資料是否是我们預期的格式 (以 US,GS, 開頭)
-                    if len(parts) >= 3 and parts[0] == 'US' and parts[1] == 'GS':
-                        # 取得包含體重的部分，例如 "   10.54kg"
-                        weight_str_raw = parts[2]
-                        
-                        # 移除前後多餘的空格 -> "10.54kg"
-                        weight_str_cleaned = weight_str_raw.strip()
-                        
-                        # 移除 "kg" 單位 (不分大小寫) -> "10.54"
-                        weight_str_no_unit = weight_str_cleaned.lower().replace('kg', '')
-                        
-                        # 將純數字的字串轉換為浮點數
-                        self.weight = float(weight_str_no_unit)
-                        
-                time.sleep(0.05)
+                # 配合 serial.Serial 的 timeout 參數讀取，不再依賴 busy loop 檢查 in_waiting
+                line_bytes = self.ser.readline()
+                if not line_bytes:
+                    continue
+                
+                line = line_bytes.decode('ascii', errors='ignore').strip()
+                parts = line.split(',')
+                if len(parts) >= 3 and parts[0] == 'US' and parts[1] == 'GS':
+                    weight_str_raw = parts[2]
+                    weight_str_cleaned = weight_str_raw.strip()
+                    weight_str_no_unit = weight_str_cleaned.lower().replace('kg', '')
+                    self.weight = float(weight_str_no_unit)
             except Exception as e:
-                logging.error(f"讀取或解析磅秤資料時發生錯誤: {e}", exc_info=True)
-                self.weight = -1 # 發生錯誤時回傳 -1
+                logging.error(f"讀取或解析磅秤資料時發生錯誤 (將自動中斷並嘗試重連): {e}")
+                self.disconnect()
+                self.weight = -1
                 time.sleep(1)
+
     def _read_loop_simulation(self):
         base_weight = 40.0
         while self.is_running:
             self.weight = base_weight + random.uniform(-2.0, 2.0)
             time.sleep(0.2)
+
     def start(self, port, simulation=False):
-        if self.is_running: self.stop()
+        if self.is_running: 
+            self.stop()
         self.is_simulating = simulation
         self.port = port
+        self.is_running = True
+        
         if self.is_simulating:
-            self.is_running = True
             self.thread = threading.Thread(target=self._read_loop_simulation, daemon=True)
             self.thread.start()
             logging.info("磅秤模擬器已啟動")
             return True
         else:
-            try:
-                self.ser = serial.Serial(self.port, self.baudrate, timeout=1)
-                self.is_running = True
-                self.thread = threading.Thread(target=self._read_loop_real, daemon=True)
-                self.thread.start()
-                logging.info(f"磅秤讀取器已在 {self.port} 啟動")
-                return True
-            except serial.SerialException as e:
-                logging.error(f"無法開啟序列埠 {self.port}: {e}")
-                self.ser = None
-                return False
+            # 首次連線嘗試
+            self.connect()
+            self.thread = threading.Thread(target=self._read_loop_real, daemon=True)
+            self.thread.start()
+            logging.info(f"磅秤讀取器監控執行緒已在 {self.port} 啟動")
+            return True
+
     def stop(self):
         self.is_running = False
-        if self.thread and self.thread.is_alive(): self.thread.join(timeout=1)
-        if self.ser and self.ser.is_open: self.ser.close()
+        self.disconnect()
+        if self.thread and self.thread.is_alive():
+            self.thread.join(timeout=1)
         self.thread = None
-        self.ser = None
         logging.info("磅秤讀取器/模擬器已停止")
+
     def get_weight(self):
         return self.weight
 scale_reader = ScaleReader()
@@ -1269,6 +1298,8 @@ def find_player_info_from_main_system(player_id):
 @app.route('/api/print_label/<int:history_id>', methods=['POST'])
 def api_print_label(history_id):
     config = load_config()
+    label_pdf_path = None
+    final_image_path = None
     try:
         BLEED_TOP_MM    = 1.0
         BLEED_BOTTOM_MM = 1.0
@@ -1406,6 +1437,18 @@ def api_print_label(history_id):
         logging.error(f"產生或列印標籤時發生未知錯誤: {e}", exc_info=True)
         # 【修正】將原始錯誤 e 傳遞給前端，以便看到 "unsupported format" 錯誤
         return jsonify({"status": "error", "message": f"操作失敗: {e}"}), 500
+    finally:
+        # 清除暫存檔案防止磁碟空間洩漏
+        if label_pdf_path and os.path.exists(label_pdf_path):
+            try:
+                os.remove(label_pdf_path)
+            except Exception as ex:
+                logging.warning(f"無法清除標籤 PDF 暫存檔: {ex}")
+        if final_image_path and os.path.exists(final_image_path):
+            try:
+                os.remove(final_image_path)
+            except Exception as ex:
+                logging.warning(f"無法清除標籤 PNG 暫存檔: {ex}")
 
 @app.route('/api/export_results', methods=['GET'])
 def api_export_results():

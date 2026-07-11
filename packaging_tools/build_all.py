@@ -11,6 +11,92 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # weight 
 PACKAGING_DIR = os.path.join(BASE_DIR, "packaging_tools")
 BUILD_DIR = os.path.join(BASE_DIR, "build")
 DIST_DIR = os.path.join(BASE_DIR, "dist")
+WEIGH_IN_DIR = os.path.join(DIST_DIR, "WeighIn")
+BACKUP_DIR = os.path.join(BASE_DIR, "build_backup_temp")
+
+def backup_weigh_data():
+    """備份現有的授權、資料庫與照片等關鍵資料"""
+    if not os.path.exists(BACKUP_DIR):
+        os.makedirs(BACKUP_DIR)
+    
+    backed_up = []
+    
+    # 1. 備份關鍵檔案
+    for filename in ["license.lic", ".sys_time.dat", "weigh_in.db"]:
+        src_file = os.path.join(WEIGH_IN_DIR, filename)
+        if os.path.exists(src_file):
+            try:
+                shutil.copy2(src_file, os.path.join(BACKUP_DIR, filename))
+                backed_up.append(filename)
+            except Exception as e:
+                print(f"  - [WARN] 備份 {filename} 失敗: {e}")
+                
+    # 2. 備份 photos 目錄
+    photos_src = os.path.join(WEIGH_IN_DIR, "photos")
+    if os.path.exists(photos_src):
+        try:
+            photos_dst = os.path.join(BACKUP_DIR, "photos")
+            if os.path.exists(photos_dst):
+                shutil.rmtree(photos_dst)
+            shutil.copytree(photos_src, photos_dst)
+            backed_up.append("photos/")
+        except Exception as e:
+            print(f"  - [WARN] 備份 photos 目錄失敗: {e}")
+            
+    if backed_up:
+        print(f"  - 已自動備份關鍵資料: {', '.join(backed_up)}")
+
+def restore_weigh_data():
+    """還原備份的關鍵資料"""
+    if not os.path.exists(BACKUP_DIR):
+        return
+    
+    restored = []
+    os.makedirs(WEIGH_IN_DIR, exist_ok=True)
+    
+    # 1. 還原檔案
+    for filename in ["license.lic", ".sys_time.dat", "weigh_in.db"]:
+        src_file = os.path.join(BACKUP_DIR, filename)
+        if os.path.exists(src_file):
+            try:
+                dst_file = os.path.join(WEIGH_IN_DIR, filename)
+                if os.path.exists(dst_file):
+                    os.remove(dst_file)
+                shutil.copy2(src_file, dst_file)
+                restored.append(filename)
+            except Exception as e:
+                print(f"  - [WARN] 還原 {filename} 失敗: {e}")
+                
+    # 2. 還原 photos 目錄
+    photos_src = os.path.join(BACKUP_DIR, "photos")
+    if os.path.exists(photos_src):
+        try:
+            photos_dst = os.path.join(WEIGH_IN_DIR, "photos")
+            if os.path.exists(photos_dst):
+                for root, dirs, files in os.walk(photos_src):
+                    rel_dir = os.path.relpath(root, photos_src)
+                    target_dir = photos_dst if rel_dir == "." else os.path.join(photos_dst, rel_dir)
+                    os.makedirs(target_dir, exist_ok=True)
+                    for file in files:
+                        s_file = os.path.join(root, file)
+                        d_file = os.path.join(target_dir, file)
+                        if os.path.exists(d_file):
+                            os.remove(d_file)
+                        shutil.move(s_file, d_file)
+            else:
+                shutil.copytree(photos_src, photos_dst)
+            restored.append("photos/")
+        except Exception as e:
+            print(f"  - [WARN] 還原 photos 目錄失敗: {e}")
+            
+    if restored:
+        print(f"  - 已自動還原關鍵資料: {', '.join(restored)}")
+        
+    # 清理備份資料夾
+    try:
+        shutil.rmtree(BACKUP_DIR)
+    except Exception:
+        pass
 
 def install_requirements():
     """檢查並安裝 PyInstaller 與 PyArmor"""
@@ -182,6 +268,7 @@ def run_pyinstaller(script_name, exe_name, is_gui=True):
         "--workpath", BUILD_DIR,
         "--distpath", DIST_DIR,
         "--name", exe_name,
+        "--onedir" # 顯式使用 onedir 打包模式
     ]
 
     # 若是使用混淆代碼，將先前解析出來的所有 hidden imports 傳給 PyInstaller 進行打包
@@ -244,6 +331,10 @@ def main():
     print("==========================================")
     
     install_requirements()
+    
+    # 備份現有的授權與關鍵資料
+    backup_weigh_data()
+    
     clean_previous_builds()
     
     # 打包主程式 main.py 為 WeighIn.exe (無主控台)
@@ -251,11 +342,17 @@ def main():
             
     if success:
         copy_static_resources()
+        
+        # 還原關鍵資料
+        restore_weigh_data()
+        
         print("\n==========================================")
         print(f"[OK] 打包流程結束！成功生成過磅程式。")
         print(f"    最終發布檔案位於: {DIST_DIR}")
         print("==========================================")
     else:
+        # 即使打包失敗也還原
+        restore_weigh_data()
         print("\n[ERR] 打包失敗，未成功生成程式。")
 
 if __name__ == "__main__":
