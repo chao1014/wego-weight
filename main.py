@@ -278,6 +278,11 @@ def load_config():
         save_config(default_config)
         return default_config
 
+def get_server_base_url(config):
+    """Return the configured main-system URL without a trailing slash."""
+    return str(config.get('server_ip') or '').strip().rstrip('/')
+
+
 def get_printers():
     try:
         return [p[2] for p in win32print.EnumPrinters(win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS)]
@@ -296,7 +301,7 @@ def get_event_id_from_name(config):
         raise ValueError("設定中未提供賽事名稱 (event_name)")
     
     try:        
-        api_url = f"{config['server_ip']}/api/events"
+        api_url = f"{get_server_base_url(config)}/api/events"
         response = requests.get(api_url, timeout=5)
         response.raise_for_status()
         events = response.json()
@@ -359,7 +364,7 @@ def api_get_events():
     if config['mode'] != 'online' or not config.get('server_ip'):
         return jsonify([]) # 非連線模式或未設定IP，回傳空列表
     try:        
-        api_url = f"{config['server_ip']}/api/events"
+        api_url = f"{get_server_base_url(config)}/api/events"
         response = requests.get(api_url, timeout=5)
         response.raise_for_status()
         events = response.json()
@@ -512,7 +517,7 @@ def api_sync_from_server():
         # (此階段完全不碰本地資料庫)
         
         event_id = get_event_id_from_name(config)
-        server_ip = config['server_ip']
+        server_ip = get_server_base_url(config)
         logging.info(f"正在從 {server_ip} 獲取組別列表...")
         cat_api_url = f"{server_ip}/api/events/{event_id}/weighin_categories"
         cat_response = requests.get(cat_api_url, timeout=10)
@@ -727,7 +732,7 @@ def api_get_event_info():
     if config['mode'] != 'online': return jsonify({})
     try:
         event_id = get_event_id_from_name(config)
-        api_url = f"{config['server_ip']}/api/events/{event_id}"
+        api_url = f"{get_server_base_url(config)}/api/events/{event_id}"
         response = requests.get(api_url, timeout=5)
         response.raise_for_status()
         return response.json()
@@ -903,7 +908,7 @@ def api_save_weigh_in():
         if config['mode'] == 'online':
             try:
                 event_id = get_event_id_from_name(config)
-                api_url = f"{config['server_ip']}/api/events/{event_id}/weighin/save"
+                api_url = f"{get_server_base_url(config)}/api/events/{event_id}/weighin/save"
                 payload = {"player_id": player_id, "weight": weight, "status": "通過" if status == "passed" else "未通過"}
                 
                 response = requests.post(api_url, json=payload, timeout=5)
@@ -987,7 +992,7 @@ def api_save_random_weigh_in():
         if config['mode'] == 'online':
             try:
                 event_id = get_event_id_from_name(config)
-                api_url = f"{config['server_ip']}/api/events/{event_id}/random_weigh_in/save"
+                api_url = f"{get_server_base_url(config)}/api/events/{event_id}/random_weigh_in/save"
                 payload = {
                     "player_id": player_id, 
                     "weight": weight, 
@@ -1073,7 +1078,7 @@ def api_server_connection_status():
     if config.get('mode') == 'offline':
         return jsonify({"status": "offline"})
 
-    server_ip = config.get('server_ip')
+    server_ip = get_server_base_url(config)
     if not server_ip:
         return jsonify({"status": "error", "message": "未設定伺服器IP"}), 500
 
@@ -1154,7 +1159,7 @@ def api_retry_failed_syncs():
             try:
                 # 步驟 3a: 執行網路請求 (資料庫此時是解鎖的)
                 if is_random:
-                    api_url = f"{config['server_ip']}/api/events/{event_id}/random_weigh_in/save"
+                    api_url = f"{get_server_base_url(config)}/api/events/{event_id}/random_weigh_in/save"
                     payload = {
                         "player_id": player_id,
                         "weight": record.get('weight'),
@@ -1162,7 +1167,7 @@ def api_retry_failed_syncs():
                         "upper_limit": record.get('upper_limit')
                     }
                 else:
-                    api_url = f"{config['server_ip']}/api/events/{event_id}/weighin/save"
+                    api_url = f"{get_server_base_url(config)}/api/events/{event_id}/weighin/save"
                     payload = {
                         "player_id": player_id,
                         "weight": record.get('weight'),
@@ -1264,7 +1269,7 @@ def find_player_info_from_main_system(player_id):
         # 優先嘗試直接查詢選手的 API (需要主系統支援此 API)
         # 協同建議: 請在您的主系統 app.py 中新增 GET /api/events/<event_id>/players/<player_id>
         try:
-            player_direct_api_url = f"{config['server_ip']}/api/events/{event_id}/players/{player_id}"
+            player_direct_api_url = f"{get_server_base_url(config)}/api/events/{event_id}/players/{player_id}"
             response = requests.get(player_direct_api_url, timeout=3)
             if response.ok:
                 player_info = response.json()
@@ -1276,13 +1281,13 @@ def find_player_info_from_main_system(player_id):
             logging.warning(f"直接查詢選手 API 失敗: {direct_e}，將嘗試遍歷組別的舊方法。")
 
         # 如果直接查詢失敗，則執行原本的遍歷方法作為備用方案
-        cat_api_url = f"{config['server_ip']}/api/events/{event_id}/weighin_categories"
+        cat_api_url = f"{get_server_base_url(config)}/api/events/{event_id}/weighin_categories"
         cat_response = requests.get(cat_api_url, timeout=5)
         cat_response.raise_for_status(); categories = cat_response.json()
         for category in categories:
             cat_id = category.get('id')
             if not cat_id: continue
-            player_api_url = f"{config['server_ip']}/api/events/{event_id}/categories/{cat_id}/players"
+            player_api_url = f"{get_server_base_url(config)}/api/events/{event_id}/categories/{cat_id}/players"
             player_response = requests.get(player_api_url, timeout=5)
             player_response.raise_for_status(); players = player_response.json()
             for player in players:

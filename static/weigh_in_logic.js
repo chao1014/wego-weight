@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function populateEvents() {
-        const serverIp = serverIpInput.value;
+        const serverIp = serverIpInput.value.trim().replace(/\/+$/, '');
         if (!serverIp) {
             eventSelect.innerHTML = '<option value="">請先輸入伺服器IP</option>';
             return;
@@ -1543,7 +1543,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     let ws = null;
     function setupWebSocket() {
         // 從目前的伺服器 IP 設定中提取主機名
-        const serverIp = serverIpInput.value;
+        const serverIp = serverIpInput.value.trim().replace(/\/+$/, '');
         if (!serverIp || document.getElementById('mode-offline').checked) return;
 
         try {
