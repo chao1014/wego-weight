@@ -189,6 +189,8 @@ class CameraManager:
         if self.thread and self.thread.is_alive(): self.thread.join(timeout=1)
         self.thread = None
         self.cap = None
+        with self.lock:
+            self.frame = None
     def get_jpeg_frame(self):
         with self.lock:
             if self.frame is None: return None            
@@ -338,9 +340,25 @@ def api_load_config(): return jsonify(load_config())
 def api_save_config():
     # 確保此函式是更新邏輯，而非覆蓋
     current_config = load_config()
+    old_camera = current_config.get('camera')
+    old_save_photo = current_config.get('save_photo', True)
+    
     current_config.update(request.json)
     save_config(current_config)
     
+    new_camera = current_config.get('camera')
+    new_save_photo = current_config.get('save_photo', True)
+    
+    # 檢查相機設定是否有變動，若有則動態啟動或停止相機
+    if old_camera != new_camera or old_save_photo != new_save_photo:
+        if new_camera is not None and new_save_photo:
+            logging.info(f"偵測到相機設定變更，正在啟動相機 {new_camera}...")
+            # CameraManager 內有防呆，若已在執行會先 stop() 再 start()
+            camera_manager.start(camera_id=new_camera)
+        else:
+            logging.info("偵測到相機設定關閉，正在停止相機...")
+            camera_manager.stop()
+            
     logging.info(f"設定已儲存: {current_config}")
     return jsonify({"status": "success"})
 
@@ -775,11 +793,13 @@ def api_get_players():
 
         # 獲取選手 ID 列表以供 IN 查詢使用
         player_ids = tuple(p['id'] for p in players_list)
+        placeholders = ",".join(["?"] * len(player_ids))
         
         # 步驟 2: 一次性獲取所有選手的「隨機過磅」狀態 (has_random_weigh_in)
         # 只要在 history 中有 is_random=1 的記錄，就代表 "已抽磅"
         cursor.execute(
-            f"SELECT player_id FROM weigh_in_history WHERE is_random = 1 AND player_id IN {player_ids} GROUP BY player_id"
+            f"SELECT player_id FROM weigh_in_history WHERE is_random = 1 AND player_id IN ({placeholders}) GROUP BY player_id",
+            player_ids
         )
         # 將結果存入一個 Set 中以便快速查找
         random_completed_set = {row['player_id'] for row in cursor.fetchall()}
@@ -796,13 +816,13 @@ def api_get_players():
                         ORDER BY timestamp DESC
                     ) as rn
                 FROM weigh_in_history
-                WHERE (is_random = 0 OR is_random IS NULL) AND player_id IN {player_ids}
+                WHERE (is_random = 0 OR is_random IS NULL) AND player_id IN ({placeholders})
             )
             SELECT player_id, status 
             FROM RankedHistory 
             WHERE rn = 1
         """
-        cursor.execute(latest_status_query)
+        cursor.execute(latest_status_query, player_ids)
         # 將結果存入一個 Dict 中以便快速查找
         latest_status_dict = {row['player_id']: row['status'] for row in cursor.fetchall()}
 

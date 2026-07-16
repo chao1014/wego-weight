@@ -239,23 +239,11 @@ def run_pyinstaller(script_name, exe_name, is_gui=True):
         ])
         hidden_imports = parse_modules_from_imports(import_stmts)
         
-        # 執行混淆
-        subprocess.check_call(pyarmor_cmd, cwd=BASE_DIR, startupinfo=startupinfo)
-        print("  - 程式碼混淆加密完成，重整套件目錄結構...")
-        
-        # 重建套件結構
-        pkg_tools_dst = os.path.join(obf_out_dir, "packaging_tools")
-        os.makedirs(pkg_tools_dst, exist_ok=True)
-        
-        for lic_file in ["license_verifier.py", "register_gui.py", "updater.py"]:
-            src_file = os.path.join(obf_out_dir, lic_file)
-            if os.path.exists(src_file):
-                shutil.move(src_file, os.path.join(pkg_tools_dst, lic_file))
-                
-        use_obfuscated = True
+        # 為了測試或避開 Windows 封鎖，此處暫時強制停用 PyArmor
+        print("  - [INFO] 已強制停用 PyArmor 加密，直接使用標準 PyInstaller 打包...")
+        use_obfuscated = False
     except Exception as e:
-        print(f"  - [WARN] 該腳本混淆加固失敗 (原因: 免費版 PyArmor 檔案大小限制或環境問題)。")
-        print(f"  - [WARN] 系統將自動降級為標準 PyInstaller 安全打包流程...")
+        print(f"  - [WARN] 依賴提取失敗: {e}")
         use_obfuscated = False
 
     # 2. 設定打包源檔案與命令

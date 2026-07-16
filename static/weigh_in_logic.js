@@ -431,6 +431,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
             if (!response.ok) throw new Error('儲存失敗');
             log('系統設定已儲存');
+            
+            if (config.camera === null) {
+                cameraImage.src = '';
+                cameraImage.style.display = 'none';
+            } else {
+                cameraImage.style.display = 'block';
+                cameraImage.src = `/api/camera_feed?t=${new Date().getTime()}`;
+            }
         } catch (error) {
             log('錯誤：無法儲存設定');
             console.error('Error saving config:', error);
